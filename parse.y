@@ -58,6 +58,8 @@
 
 #include "shmbutil.h"
 
+#include "math_parser.h"
+
 #if defined (READLINE)
 #  include "bashline.h"
 #  include <readline/readline.h>
@@ -3234,6 +3236,7 @@ reset_readahead_token ()
     token_to_read = 0;
 }
 
+int is_newline = 1;
 /* Read the next token.  Command can be READ (normal operation) or
    RESET (to normalize state). */
 static int
@@ -3305,6 +3308,26 @@ itrace("shell_getc: bash_input.location.string = `%s'", bash_input.location.stri
       EOF_Reached = 1;
       return (yacc_EOF);
     }
+
+   /*
+    * If on the interactive shell and we encounter a newline followed by either
+    * a numeric character (0-9) or an '=' character, then we treat it as
+    * an expression
+    */
+  if (((character >= '0' && character < '9') || character == '=') 
+         && is_newline && interactive) {
+     char* exp_buffer = malloc(sizeof(char) * 1024);
+     int exp_buff_idx = 0;
+     /* Copy the character in which started the expression */
+     if (character != '=')
+       exp_buffer[exp_buff_idx++] = character;
+     /* Copy until newline */
+     while ((character = shell_getc(1)) != '\n' && character != EOF)
+       exp_buffer[exp_buff_idx++] = character;
+     exp_buffer[exp_buff_idx++] = '\0';
+     handle_expression(exp_buffer); /* math_parser.c */
+  }
+
 
   if MBTEST(character == '#' && (!interactive || interactive_comments))
     {
