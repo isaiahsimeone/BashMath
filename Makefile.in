@@ -441,7 +441,8 @@ CSOURCES = shell.c eval.c parse.y general.c make_cmd.c print_cmd.c y.tab.c \
 	   input.c bashhist.c array.c arrayfunc.c assoc.c sig.c pathexp.c \
 	   unwind_prot.c siglist.c bashline.c bracecomp.c error.c \
 	   list.c stringlib.c locale.c findcmd.c redir.c \
-	   pcomplete.c pcomplib.c syntax.c xmalloc.c math_parser.c
+	   pcomplete.c pcomplib.c syntax.c xmalloc.c mp_main.c \
+	   mp_parser.c mp_scanner.c mp_error.c
 
 HSOURCES = shell.h flags.h trap.h hashcmd.h hashlib.h jobs.h builtins.h \
 	   general.h variables.h config.h $(ALLOC_HEADERS) alias.h \
@@ -483,7 +484,8 @@ OBJECTS	 = shell.o eval.o y.tab.o general.o make_cmd.o print_cmd.o $(GLOBO) \
 	   trap.o input.o unwind_prot.o pathexp.o sig.o test.o version.o \
 	   alias.o array.o arrayfunc.o assoc.o braces.o bracecomp.o bashhist.o \
 	   bashline.o $(SIGLIST_O) list.o stringlib.o locale.o findcmd.o redir.o \
-	   pcomplete.o pcomplib.o syntax.o xmalloc.o math_parser.o $(SIGNAMES_O)
+	   pcomplete.o pcomplib.o syntax.o xmalloc.o mp_main.o $(SIGNAMES_O) \
+	   mp_parser.o mp_scanner.o mp_error.o
 
 # Where the source code of the shell builtins resides.
 BUILTIN_SRCDIR=$(srcdir)/builtins
@@ -1220,7 +1222,10 @@ xmalloc.o: config.h bashtypes.h ${BASHINCDIR}/ansi_stdlib.h error.h
 xmalloc.o: ${BASHINCDIR}/stdc.h $(ALLOC_LIBSRC)/shmalloc.h
 
 # Math parser
-math_parser.o: math_parser.h
+mp_main.o: math_parser.h
+mp_parser.o: math_parser.h
+mp_scanner.o: math_parser.h
+mp_error.o: math_parser.h
 
 # job control
 

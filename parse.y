@@ -3314,7 +3314,7 @@ itrace("shell_getc: bash_input.location.string = `%s'", bash_input.location.stri
     * a numeric character (0-9) or an '=' character, then we treat it as
     * an expression
     */
-  if (((character >= '0' && character < '9') || character == '=') 
+  if (((character >= '0' && character <= '9') || character == '=') 
          && is_newline && interactive) {
      char* exp_buffer = malloc(sizeof(char) * 1024);
      int exp_buff_idx = 0;
@@ -3325,7 +3325,7 @@ itrace("shell_getc: bash_input.location.string = `%s'", bash_input.location.stri
      while ((character = shell_getc(1)) != '\n' && character != EOF)
        exp_buffer[exp_buff_idx++] = character;
      exp_buffer[exp_buff_idx++] = '\0';
-     handle_expression(exp_buffer); /* math_parser.c */
+     handle_expression(exp_buffer); /* mp_main.c */
   }
 
 
