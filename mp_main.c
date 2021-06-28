@@ -42,7 +42,8 @@ char* get_identifier_token(char ch)
     int idx = 0;
     int encountered_whitespace = 0;
 
-    while (nextCh != 0 && isalpha(nextCh) && !encountered_whitespace && idx < MAX_IDENT_LENGTH) {
+    while (nextCh != 0 && isalpha(nextCh) && !encountered_whitespace
+            && idx < MAX_IDENT_LENGTH) {
         identifier[idx++] = nextCh;
         nextCh = get_next_char_report_whitespace(&encountered_whitespace);
     }
