@@ -1,82 +1,124 @@
 #include "math_parser.h"
 
+/* The buffer containing the input expression */
 extern char buffer[BUFF_SZ];
+/* 1 if an error has been encountered, 0 otherwise */
 extern int error_encountered;
 
+/*
+ * Prints an error message to stderr stating that a symbol was encountered
+ * in the input expression that was not part of any known sequence.
+ */
 void unknown_seq_error()
 {
-    printf("%s\n", buffer);
+    fprintf(stderr, "%s\n", buffer);
     int at_pos = peek_token().col_pos;
-    P_SPACE(at_pos);
-    printf("^ Error: First in unknown sequence\n");
+    P_SPACE(stderr, at_pos);
+    fprintf(stderr, "^ Error: First in unknown sequence\n");
 }
 
-int syntax_error(Token* token, Error e)
+/*
+ * Prints a message to stderr depending on the kind of error passed to
+ * this function. E.g. UNEXPECTED_EOF, BAD_SYNTAX, etc.
+ *
+ * token: In case of a BAD_SYNTAX error, the token corresponding to where
+ *        this error took place in the input expression.
+ *     e: A member of the Error enum corresponding to which error was
+ *        encountered.
+ */
+void syntax_error(Token* token, Error e)
 {
     if (e == UNEXPECTED_EOF)
-        printf("Unexpected End of file\n");
+        fprintf(stderr, "Unexpected End of file\n");
     else if (e == BAD_SYNTAX) {
-        printf("%s\n", buffer);
-        P_SPACE(token->col_pos);
-        printf("^ Error: Syntax error\n");
+        fprintf(stderr, "%s\n", buffer);
+        P_SPACE(stderr, token->col_pos);
+        fprintf(stderr, "^ Error: Syntax error\n");
     } else if (e == INP_TOO_LONG)
-        printf("Error: Input too long\n");
-
-    return e;
+        fprintf(stderr, "Error: Input too long\n");
 }
 
+/*
+ * Displays an error to stderr where an encountered Terminal symbol did
+ * not match the expected terminal symbol.
+ *
+ * encountered: The terminal symbol that was erroneously encountered
+ *    expected: The terminal symbol that was expected to be encountered
+ *
+ *     returns: MATCH_ERR, a member of the Error enum
+ */
 int match_error(Token encountered, Terminal expected)
 {
-    if (error_encountered == 0)
+    if (!error_encountered)
         stop_parsing();
     else
-        return 0;
+        return MATCH_ERR;
 
-    printf("%s\n", buffer);
-    P_SPACE(encountered.col_pos);
-    printf("^ Error: Expected %s but encountered %s\n",get_token_name(expected),
-           get_token_name(encountered.type));
+    fprintf(stderr, "%s\n", buffer);
+    P_SPACE(stderr, encountered.col_pos);
+    fprintf(stderr, "^ Error: Expected %s but encountered %s\n",
+        get_token_name(expected), get_token_name(encountered.type));
 
-    return 0;
+    return MATCH_ERR;
 }
 
-// Call for error involving 0 with modulus and division
+/*
+ * Displays an error to stderr. This error states that there was an attempt
+ * to divide by zero in either a division or modulus operation.
+ *
+ * offender: A Terminal, either DIVIDE or MODULUS that was involved in an
+ *           illegal operation with zero.
+ */
 void div_by_zero_error(Terminal offender)
 {
-
-    if (error_encountered == 0)
+    if (!error_encountered)
         stop_parsing();
     else
         return ;
     const char* operator = (offender == DIVIDE ? "Division" : "Modulus");
-    printf("%s by 0 error\n", operator);
+    fprintf(stderr, "%s by 0 error\n", operator);
 }
 
-//Paired paren pos = position of the other paren that was not opened or closed
+/*
+ * Prints an error to stderr stating that either a left/right parenthesis
+ * was unmatched. 
+ *
+ * missing_paren:    The type of missing parentheses, either LPAREN, or RPAREN
+ * paired_paren_pos: The position of the parenthesis that was unmatched 
+ */
 void paren_error(Terminal missing_paren, int paired_paren_pos)
 {
-    if (error_encountered == 0)
+    if (!error_encountered)
         stop_parsing();
     else
         return ;
-    printf("%s\n", buffer); /* Print originally entered expression */
-    P_SPACE(paired_paren_pos);
+    fprintf(stderr, "%s\n", buffer); /* Print originally entered expression */
+    P_SPACE(stderr, paired_paren_pos);
     if (missing_paren == LPAREN)
-        printf("^ Error: Missing LParen '(' to open\n");
+        fprintf(stderr, "^ Error: Missing LParen '(' to open\n");
     else
-        printf("^ Error: Missing RParen ')' to close\n");
+        fprintf(stderr, "^ Error: Missing RParen ')' to close\n");
 }
 
+/*
+ * Prints an error to stderr stating that an identifier/LValue has no
+ * assigned value, and hence cannot be used in an expression.
+ *
+ * unassigned_lvalue: The Token which was entered in an expression, that
+ *                    has no value assigned.
+ */
 void unassigned_lvalue_err(Token unassigned_lvalue)
 {
-    if (error_encountered == 0)
+    if (!error_encountered)
         stop_parsing();
     else
         return ;
-    printf("%s\n", buffer); /* Print originally entered expression */
-    P_SPACE(unassigned_lvalue.col_pos);
-    printf("^ Error: Unassigned Identifier '%s'\n", unassigned_lvalue.lvalue);
+    fprintf(stderr, "%s\n", buffer); /* Print originally entered expression */
+    P_SPACE(stderr, unassigned_lvalue.col_pos);
+    fprintf(stderr, "^ Error: Unassigned Identifier '%s'\n",
+        unassigned_lvalue.lvalue);
 }
+
 /*
  * Any fatal error should call stop_parsing() to cause all future
  * calls to is_match() to fail. This as a result effectively stops

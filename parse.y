@@ -3315,14 +3315,15 @@ itrace("shell_getc: bash_input.location.string = `%s'", bash_input.location.stri
     * an expression
     */
   if (((character >= '0' && character <= '9') || character == '=') 
-         && is_newline && interactive) {
+  			&& is_newline && interactive) {
      char* exp_buffer = malloc(sizeof(char) * 1024);
      int exp_buff_idx = 0;
      /* Copy the character in which started the expression */
      if (character != '=')
        exp_buffer[exp_buff_idx++] = character;
      /* Copy until newline */
-     while ((character = shell_getc(1)) != '\n' && character != EOF)
+     while ((character = shell_getc(1)) != '\n' && character != EOF
+     				&& exp_buff_idx < 1024)
        exp_buffer[exp_buff_idx++] = character;
      exp_buffer[exp_buff_idx++] = '\0';
      handle_expression(exp_buffer); /* mp_main.c */
@@ -3343,6 +3344,7 @@ itrace("shell_getc: bash_input.location.string = `%s'", bash_input.location.stri
     {
       /* If we're about to return an unquoted newline, we can go and collect
 	 the text of any pending here document. */
+	 is_newline = 1;
       if (need_here_doc)
 	gather_here_documents ();
 
@@ -3353,6 +3355,8 @@ itrace("shell_getc: bash_input.location.string = `%s'", bash_input.location.stri
       parser_state &= ~PST_ASSIGNOK;
 
       return (character);
+    } else {
+    	 is_newline = 0;
     }
 
   if (parser_state & PST_REGEXP)

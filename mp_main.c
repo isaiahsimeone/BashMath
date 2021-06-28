@@ -1,20 +1,39 @@
 #include "math_parser.h"
 
-/* Globals */
+/* A 2D array of current identifier tokens */
 Token** identifiers;
+/* An array of Tokens comprising the input expression */
 Token* token_stream;
+/* The input string constituting the input expression */
 char buffer[BUFF_SZ];
+/* Used to index the above buffer */
 int buff_idx = 0;
+/* The size of the above buffer */
 int buff_sz = 0;
+/* Tracks the position of symbols within the expression buffer */
 int current_column = 0;
+/* The next character in the buffer */
 char nextCh;
+/* Used to index the stream of tokens (token_stream) */
 int token_stream_idx;
+/* The number of initialised identifier tokens */
 int identifier_count;
+/* The number of tokens in the token_stream */
 int tokens_in_stream;
+/* 1 if an error is encountered, 0 otherwise */
 int error_encountered;
+/* Used to track the commencement of a session in BASH */
 int session_started = 0;
+/* Tracks how many functions deep parsing is */
 int parse_level;
 
+/*
+ * Returns a string comprising of the LValue of an identifier token
+ * 
+ *      ch: the character that commences an identifier token
+ *
+ * returns: A string comprising the dentifiers name
+ */
 char* get_identifier_token(char ch)
 {
     char* identifier = malloc(MAX_IDENT_LENGTH * sizeof(char));
@@ -23,7 +42,6 @@ char* get_identifier_token(char ch)
     int idx = 0;
     int encountered_whitespace = 0;
 
-////////////// DON'T NEED ISALPHA() CHECK HERE. WHITESPACE IS ENOUGH since a variable like 'bar1' is fine
     while (nextCh != 0 && isalpha(nextCh) && !encountered_whitespace && idx < MAX_IDENT_LENGTH) {
         identifier[idx++] = nextCh;
         nextCh = get_next_char_report_whitespace(&encountered_whitespace);
@@ -33,33 +51,39 @@ char* get_identifier_token(char ch)
     return identifier;
 }
 
-
-/* Math evaulation entry point */
+/*
+ * The entry point for mathematical expression evaluation. scans, lexes and
+ * parses the input expression before evaluation the result
+ *
+ * expression: a string comprising of the input expression to be processed
+ */
 void handle_expression(char* expression)
 {
     /* Reset globals */
     memset(buffer, 0, BUFF_SZ);
     buff_idx = 0;
     buff_sz = strlen(expression);
-    /* One less due to initial call to get_next_char() below, which modifies this variable */
+    /* 
+     * One less due to initial call to get_next_char() 
+     * below, which modifies this variable 
+     */
     current_column = -1;
     error_encountered = 0;
     parse_level = 0;
 
     if (buff_sz >= BUFF_SZ) {
-        syntax_error(NULL, INP_TOO_LONG);   /* New type of error???????????? like constraint_error.. Something to do with inp too large */
+        syntax_error(NULL, INP_TOO_LONG);
         return ;
     }
 
     memcpy(buffer, expression, strlen(expression));
     free(expression);
     /* Initialise next char */
-    nextCh = get_next_char(); // at column 1 after this, 1st char in buffer too (2nd from 0)
+    nextCh = get_next_char();
 
-
-    // construct token stream
+    /* Constructs the token stream */
     token_stream = malloc(sizeof(Token) * MAX_TOKENS);
-    memset(token_stream, 0, sizeof(Token) * MAX_TOKENS); // needed?
+    memset(token_stream, 0, sizeof(Token) * MAX_TOKENS);
     if (!session_started) {
         identifiers = malloc(sizeof(Token) * MAX_TOKENS);
         memset(identifiers, 0, sizeof(Token) * MAX_TOKENS);
@@ -91,7 +115,6 @@ void handle_expression(char* expression)
         }
     }
     
-
     DEBUG_PRINT("=========================\n");
     DEBUG_PRINT("Token stream generated...\n");
     DEBUG_PRINT("=========================\n");
@@ -114,7 +137,13 @@ void handle_expression(char* expression)
         printf("%lld\n", answer);
 }
 
-
+/*
+ * Adds an identifier token to the array of identifiers. Ready for use
+ * in expressions.
+ *
+ * token: The token that was identified as an identifier which should be
+ *        added to the list of identifiers
+ */
 void add_identifier(Token* token)
 {
     for (int i = 0; i < identifier_count; i++) {
@@ -129,6 +158,15 @@ void add_identifier(Token* token)
     identifiers[identifier_count++] = token;
 }
 
+/*
+ * Returns the identifier token associated with the specified readable
+ * LValue name.
+ *
+ *  lvalue: A string comprising the readable name of the target identifier
+ *
+ * returns: The target identifier token, or NULL if there is no such identifier
+ *          token with the specified LValue name.
+ */
 Token* get_identifier(char* lvalue)
 {
     for (int i = 0; i < identifier_count; i++) {
@@ -138,6 +176,9 @@ Token* get_identifier(char* lvalue)
     return NULL;
 }
 
+/*
+ * Prints a help dialog to stdout with instructions on how to use BashMath
+ */
 void display_help() 
 {
     printf("Expressions can be input by starting a command with \neither: a number"

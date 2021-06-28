@@ -6,8 +6,12 @@ extern int buff_sz;
 extern int current_column;
 extern char nextCh;
 
-
-/* Gets the next token from input */
+/*
+ * Returns the next tokenised item from the input expression.
+ *
+ * returns: The next token identified from the input expression
+ *          buffer.
+ */
 Token* next()
 {
     char ch;
@@ -41,14 +45,16 @@ Token* next()
 
         if (strcmp(token->lvalue, "help") == 0)
             token->type = KW_HELP;
-        DEBUG_PRINT("Token: %s, cp: %d, lv: %s\n", get_token_name(token->type), token->col_pos, token->lvalue);
+        DEBUG_PRINT("Token: %s, cp: %d, lv: %s\n", 
+            get_token_name(token->type), token->col_pos, token->lvalue);
         return token;
     }
 
     if (isdigit(ch)) {
         token->type = NUMERIC;
         token->col_pos = current_column + 1;
-        DEBUG_PRINT("Token: %s, cp: %d\n", get_token_name(token->type), token->col_pos);
+        DEBUG_PRINT("Token: %s, cp: %d\n", get_token_name(token->type),
+            token->col_pos);
         token->val = get_numerical_value(ch);
         return token;
     }
@@ -126,23 +132,36 @@ Token* next()
             token->type = ILLEGAL;
     }
     token->col_pos = current_column;
-    DEBUG_PRINT("Token: %s, cp: %d\n", get_token_name(token->type), token->col_pos);
+    DEBUG_PRINT("Token: %s, cp: %d\n", 
+        get_token_name(token->type), token->col_pos);
     return token;
 }
 
-//TODO: pass to this funcito whether it is dealing with a hex value.. Then those values are okay?
-//gotta do something because currently 1f+3+ is accepted
+/*
+ * Determines whether a provided number is a valid numeric for the specified
+ * number base. (e.g. alphabetical numbers are only appropriate in hexadecimal)
+ * 
+ *      ch: A character that is tested to be belonging to the specific base
+ *    base: the base to test the character against
+ *
+ * returns: 1 if the character is legal for the specific base, 0 otherwise.
+ */
 int legal_numeric(char ch, int base)
 {
     if (base == 16) {
         /* Is a digit or part of a hexadecimal number */
-        return (isdigit(ch) || ((ch - 'A') >= 0 && (ch - 'A') <= 5)     /* Allow hex characters */
+        return (isdigit(ch) || ((ch - 'A') >= 0 && (ch - 'A') <= 5)
             || ((ch - 'a') >= 0 && (ch - 'a') <= 5));
     }
     return isdigit(ch);
  
 }
 
+/*
+ * Returns the next character in the input buffer sequence of characters.
+ *
+ *  returns: The next non-whitespace character in the input buffer
+ */
 char get_next_char()
 {
     /*
@@ -164,6 +183,16 @@ char get_next_char()
     return buffer[buff_idx++];
 }
 
+/*
+ * Returns the next character in the input buffer sequence of characters.
+ * If any whitespace is encountered upon advancing to the next non-whitespace
+ * character, this function reports it via the skipped_whitespace argument.
+ *
+ * skipped_whitespace: set to 1 if whitespace is encountered upon advancing to
+ *                     the next non-whitespace character, 0 otherwise.
+ *
+ *  returns: The next non-whitespace character in the input buffer
+ */
 char get_next_char_report_whitespace(int* skipped_whitespace)
 {
     *skipped_whitespace = 0;
@@ -187,7 +216,15 @@ char get_next_char_report_whitespace(int* skipped_whitespace)
     return buffer[buff_idx++];
 }
 
-long get_numerical_value(char ch)
+/*
+ * Returns the numerical value of a number token from any base,
+ * to decimal.
+ *
+ *       ch: The character that identifies the start of a numerical input
+ *
+ *  returns: The value of the numerical expression in decimal.
+ */
+long long get_numerical_value(char ch)
 {
     char number[BUFF_SZ];
     memset(number, 0, BUFF_SZ);
@@ -231,6 +268,15 @@ long get_numerical_value(char ch)
     return value;
 }
 
+/*
+ * Returns a string comprising of a terminal symbols readable name
+ * e.g. get_token_name(LPAREN) -> "("
+ *
+ * terminal: The terminal symbol to lookup the readable name of
+ *
+ *  returns: A string comprising of the specified terminal symbols
+ *           readable name.
+ */
 const char* get_token_name(Terminal terminal)
 {
     return token_name[terminal];
