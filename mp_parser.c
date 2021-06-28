@@ -29,7 +29,8 @@ extern Token* token_stream;
 /*
  * Rule: Block -> Assignment | Summation | Exp
  */
-long long parse_block() {
+long long parse_block() 
+{
     PARSE_ENTRY("Parsing Block\n");
     long long value;
     if (is_match(KW_SUM))
@@ -75,11 +76,11 @@ long long parse_summation()
     parse_subrange(&lower_bound, &upper_bound);
     match(KW_IN);
     
-    // Count how many tokens were analysed in parsing of the expression to be summed
     int parse_count_0 = token_stream_idx;
     target->val = lower_bound;
     acculumlator += parse_exp();
     int parse_count_1 = token_stream_idx;
+
     int tokens_in_exp = parse_count_1 - parse_count_0;
     token_stream_idx -= tokens_in_exp;
 
@@ -135,7 +136,8 @@ long long parse_bitwise_or()
 /*
  * Rule: BitwiseXor -> BitwiseAnd {XOR BitwiseAnd}
  */
-long long parse_bitwise_xor() {
+long long parse_bitwise_xor() 
+{
     PARSE_ENTRY("Parsing bitwise xor\n");
     long long value = parse_bitwise_and();
     while (is_match(BIT_XOR)) {
@@ -149,7 +151,8 @@ long long parse_bitwise_xor() {
 /*
  * Rule: BitwiseAnd -> Bitshift {AND Bitshift}
  */
-long long parse_bitwise_and() {
+long long parse_bitwise_and() 
+{
     PARSE_ENTRY("Parsing bitwise and\n");
     long long value = parse_bitshift();
     while (is_match(BIT_AND)) {
@@ -163,7 +166,8 @@ long long parse_bitwise_and() {
 /*
  * Rule: Bitshift -> Arith {(LSHIFT | RSHIFT) Arith}
  */
-long long parse_bitshift() {
+long long parse_bitshift() 
+{
     PARSE_ENTRY("Parsing bit shift\n");
     long long value = parse_arith();
     while (is_match(LSHIFT) || is_match(RSHIFT)) {
@@ -183,7 +187,8 @@ long long parse_bitshift() {
 /*
  * Rule: Arith -> [PLUS | MINUS] Term {(PLUS | MINUS) Term}
  */
-long long parse_arith() {
+long long parse_arith() 
+{
     PARSE_ENTRY("Parsing arith\n");
     int sign = 1;
     long long value;
@@ -211,7 +216,8 @@ long long parse_arith() {
 /*
  * Rule: Term -> Exponent {(MULTIPLY | DIVIDE | MODULUS) Exponent}
  */
-long long parse_term() {
+long long parse_term() 
+{
     PARSE_ENTRY("Parsing term\n");
     long long value = parse_exponent();
     while (is_match(MULTIPLY) || is_match(DIVIDE) || is_match(MODULUS)) {
@@ -244,13 +250,16 @@ long long parse_term() {
 /*
  * Rule: Exponent -> Factor [EXPONENTIAL Factor]
  */
-long long parse_exponent() {
+long long parse_exponent() 
+{
     PARSE_ENTRY("Parsing exponent\n");
     long long value = parse_factor();
     if (is_match(EXPONENTIATE)) {
         match(EXPONENTIATE);
-        //value = (long long) powl(value, parse_factor());
-        value = value * parse_factor();
+        /* TODO: linking math library so we can use powl() from math.h */
+        int bound = parse_factor();
+        for (int i = 0; i < bound; i++)
+            value *= value;
     }
     PARSE_EXIT("Finished exponent\n");
     return value;
@@ -262,7 +271,7 @@ long long parse_exponent() {
 long long parse_factor()
 {
     PARSE_ENTRY("Parsing factor\n");
-    long long value = 0xBEEF; // garbage placeholder
+    long long value = 0xBEEF; /* garbage placeholder */
     if (is_match(LPAREN)) {
         int paren_pos = peek_token().col_pos;
         match(LPAREN);
@@ -275,7 +284,10 @@ long long parse_factor()
     }
     /* Sequence started with an RParen */
     else if (is_match(RPAREN)) {
-        /* If the token directly before this RParen is an LParen, then it's just empty parentheses */
+        /* 
+         * If the token directly before this RParen is an LParen,
+         * then it's just empty parentheses 
+         */
         if (peek_last_token().type == LPAREN && token_stream_idx > 0)
             return 0;
         int paren_pos = peek_token().col_pos;
@@ -313,53 +325,82 @@ Token* parse_get_lvalue()
     PARSE_ENTRY("Parsing LValue\n");
 
     char* target_lvalue = malloc(MAX_IDENT_LENGTH * sizeof(char));
-    memset(target_lvalue, 0, sizeof(char)* MAX_IDENT_LENGTH);
-    //target_lvalue = peek_token().lvalue; /* Get the readable name of the current lvalue */
+    memset(target_lvalue, 0, sizeof(char) * MAX_IDENT_LENGTH);
+    /* Get the readable name of the current lvalue */
     strcpy(target_lvalue, peek_token().lvalue);
     match(IDENTIFIER);
     PARSE_EXIT("Finished LValue\n");
     return get_identifier(target_lvalue);
 }
 
-// peeks the next token in the stream and compares to the given
+/*
+ * Compares the given terminal symbol to the current terminal symbol
+ * in the token stream.
+ *
+ * terminal: The terminal symbol to compare against the current stream symbol
+ *
+ *  returns: 1 if the specified symbol matches the symbol in the token stream
+ *           subject to error_encountered == 0). Returns 0 otherwise
+ */
 int is_match(Terminal terminal)
 {
     return (!error_encountered
         && token_stream[token_stream_idx].type == terminal);
 }
 
-// Advances stream index if match success
-// Returns index of matched token in tok stream or 0
+/*
+ * Attempts to match a given terminal symbol to the one currently next in the
+ * stream of tokens. If both match, the token stream is advanced to the next.
+ *
+ * expected: The terminal symbol that should match the symbol that is next in
+ *           the stream of tokens.
+ *
+ *  returns: The index of the token just matched (within the token stream)
+ *           or returns the value of match_error() if the given terminal
+ *           symbol did not match the symbol in the token stream    
+ */
 int match(Terminal expected)
 {
     Token current_token = peek_token();
 
     if (current_token.type == expected) {
         LEVEL_PRINT("Matched: %s\n", get_token_name(expected));
-        return token_stream_idx++; /* Consider the current token matched and move on */
+        /* Consider the current token matched and move on */
+        return token_stream_idx++;
     }
 
     return match_error(current_token, expected);
 }
 
-// returns the next token in the stream
+/*
+ * Returns the current token in the stream. I.e. the token
+ * that is being matched currently
+ *
+ * returns: The token that is about to be matched
+ */
 Token peek_token()
 {
     return token_stream[token_stream_idx];
 }
 
+/*
+ * Returns the next token in the stream. I.e. the token
+ * that has not been parsed yet
+ *
+ * returns: The next token in the stream
+ */
 Token peek_next_token()
 {
     return token_stream[token_stream_idx + 1];
 }
 
+/*
+ * Returns the previous token in the stream. i.e. the token
+ * that has already been matched and consumed
+ *
+ * returns: The most recently matched token in the token stream
+ */
 Token peek_last_token()
 {
     return token_stream[token_stream_idx - 1];
-}
-
-// Consumes the current token and returns it
-Token consume_token()
-{
-    return token_stream[token_stream_idx++];
 }
