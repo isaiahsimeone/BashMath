@@ -11,6 +11,7 @@ Currently, the BashMath project comes included with all source necessary to buil
 `./configure && make`
 Then,
 `sudo make install`
+Or just `./bash`
 
 ## Usage
 Once installed, BashMath will 'hijack' commands sent into bash that start with either: a digit (0-9 inclusive), or an '=' character.
