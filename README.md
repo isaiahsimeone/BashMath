@@ -13,7 +13,7 @@ Then,
 `sudo make install`
 
 ## Usage
-Once installed, BashMath will 'hijack' commands into bash that start with either: a digit (0-9 inclusive), or an '=' character.
+Once installed, BashMath will 'hijack' commands sent into bash that start with either: a digit (0-9 inclusive), or an '=' character.
 Shell scripts are not affected by this. Any shell script that worked in bash before, will still work.
 
 ## Features
