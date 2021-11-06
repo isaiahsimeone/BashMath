@@ -26,7 +26,6 @@ Shell scripts are not affected by this. Any shell script that worked in bash bef
 ## Todo
 * Improve performance of summation statement (re-parses expression for each pass of the summation.)
 * Allow for base conversions. Currently, all bases convert into decimal. Add functions like bin(), hex(), oct() to convert numeric bases.
-* It would be nice to use a BigNumber type or something similar, so huge numbers are supported.
 
 ## Changelog
 
